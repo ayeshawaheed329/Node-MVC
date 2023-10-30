@@ -1,4 +1,4 @@
-# E-Commerce Website with Node.js, and Mongoose
+# E-Commerce Website with Node.js, Express.js and Mongoose
 
 ## Project Overview
 This e-commerce website is built with Node.js and follows the MVC (Model-View-Controller) architecture. It provides a range of features for users, including secure sign-up and sign-in, password reset via email, product management, shopping cart, order history, and more.
