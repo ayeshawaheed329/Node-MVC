@@ -1,19 +1,33 @@
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 
-const PDFDocument = require('pdfkit');
+const PDFDocument = require("pdfkit");
 
 const Product = require("../models/product");
 const Order = require("../models/order");
 
+const PAGE_SIZE = 2; // number of items to be rendered on page
 exports.getProducts = (req, res, next) => {
+  let page = req.query.page;
+  const pageNo = !!page ? parseInt(page) : 1;
+  let totalRecords;
   Product.find()
+    .countDocuments()
+    .then((numberOfDoc) => {
+      totalRecords = numberOfDoc;
+      return Product.find()
+        .skip((pageNo - 1) * PAGE_SIZE)
+        .limit(PAGE_SIZE);
+    })
     .then((products) => {
-      console.log(products);
       res.render("shop/product-list", {
         prods: products,
         pageTitle: "All Products",
         path: "/products",
+        hasNextPage: PAGE_SIZE * pageNo < totalRecords,
+        hasPreviousPage: pageNo > 1,
+        lastPage: pageNo - 1,
+        nextPage: pageNo + 1,
       });
     })
     .catch((err) => {
@@ -35,12 +49,27 @@ exports.getProduct = (req, res, next) => {
 };
 
 exports.getIndex = (req, res, next) => {
+  let page = req.query.page;
+  const pageNo = !!page ? parseInt(page) : 1;
+  let totalRecords;
   Product.find()
+    .countDocuments()
+    .then((numberOfDoc) => {
+      totalRecords = numberOfDoc;
+      return Product.find()
+        .skip((pageNo - 1) * PAGE_SIZE) // mongoose allows to skip these many records from the begining
+        .limit(PAGE_SIZE); // to fetch only that much record
+    })
     .then((products) => {
       res.render("shop/index", {
         prods: products,
         pageTitle: "Shop",
         path: "/",
+        totalProducts: totalRecords,
+        hasNextPage: PAGE_SIZE * pageNo < totalRecords,
+        hasPreviousPage: pageNo > 1,
+        lastPage: pageNo - 1,
+        nextPage: pageNo + 1,
       });
     })
     .catch((err) => {
@@ -131,40 +160,40 @@ exports.getInoice = (req, res, next) => {
         return next(new Error("No order found."));
       }
       if (order.user.userId.toString() !== req.user._id.toString()) {
-        return next(new Error('Unauthorized'));
+        return next(new Error("Unauthorized"));
       }
-      const invoiceName = 'invoice-' + orderId + '.pdf';
-      const invoicePath = path.join('data', 'invoices', invoiceName);
+      const invoiceName = "invoice-" + orderId + ".pdf";
+      const invoicePath = path.join("data", "invoices", invoiceName);
 
       const pdfDoc = new PDFDocument();
-      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader("Content-Type", "application/pdf");
       res.setHeader(
-        'Content-Disposition',
+        "Content-Disposition",
         'inline; filename="' + invoiceName + '"'
       );
       pdfDoc.pipe(fs.createWriteStream(invoicePath));
       pdfDoc.pipe(res);
 
-      pdfDoc.fontSize(26).text('Invoice', {
-        underline: true
+      pdfDoc.fontSize(26).text("Invoice", {
+        underline: true,
       });
-      pdfDoc.text('-----------------------');
+      pdfDoc.text("-----------------------");
       let totalPrice = 0;
-      order.products.forEach(prod => {
+      order.products.forEach((prod) => {
         totalPrice += prod.quantity * prod.product.price;
         pdfDoc
           .fontSize(14)
           .text(
             prod.product.title +
-              ' - ' +
+              " - " +
               prod.quantity +
-              ' x ' +
-              '$' +
+              " x " +
+              "$" +
               prod.product.price
           );
       });
-      pdfDoc.text('---');
-      pdfDoc.fontSize(20).text('Total Price: $' + totalPrice);
+      pdfDoc.text("---");
+      pdfDoc.fontSize(20).text("Total Price: $" + totalPrice);
 
       pdfDoc.end();
     })
