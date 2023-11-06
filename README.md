@@ -47,6 +47,11 @@ The project is organized into three main sections:
 - For each order, an invoice can be downloaded in PDF format.
 - PDF generation is implemented using the "pdfkit" module.
 
+### 9. Checkout
+- Users can view checkout page
+- Payement is integrated by using stripe.
+- Create your own stripe account and replace my dummy keys with your to enable this feature
+
 ### Other Features
 - Comprehensive error handling throughout the project.
 - Input validation using "express-validator."
